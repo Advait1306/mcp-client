@@ -1,0 +1,53 @@
+[
+  {
+    "name": "Linear",
+    "description": "Task Management",
+    "transport": {
+      "type": "streamable-http",
+      "url": "https://mcp.linear.app/mcp",
+      "requiresAuth": true,
+      "authType": "oauth2"
+    },
+    "id": "srv_1761585053063_5xne4c4t5",
+    "createdAt": 1761585053063,
+    "lastUsed": 1761585970352
+  },
+  {
+    "name": "Notion",
+    "description": "Note taking",
+    "transport": {
+      "type": "streamable-http",
+      "url": "https://mcp.notion.com/mcp",
+      "requiresAuth": true,
+      "authType": "oauth2"
+    },
+    "id": "srv_1761585465439_nbkryjmw6",
+    "createdAt": 1761585465439,
+    "lastUsed": 1761585479659
+  },
+  {
+    "name": "Notion (SSE)",
+    "description": "Note taking",
+    "transport": {
+      "type": "sse",
+      "url": "https://mcp.notion.com/sse",
+      "requiresAuth": true,
+      "authType": "oauth2"
+    },
+    "id": "srv_1761585548227_klqtcxwzk",
+    "createdAt": 1761585548227,
+    "lastUsed": 1761585561157
+  },
+  {
+    "name": "Figma",
+    "description": "Design tool",
+    "transport": {
+      "type": "streamable-http",
+      "url": "https://mcp.figma.com/mcp",
+      "requiresAuth": true,
+      "authType": "oauth2"
+    },
+    "id": "srv_1761585940130_xc910eh9m",
+    "createdAt": 1761585940131
+  }
+]

@@ -15,16 +15,42 @@ export interface StoredCredentials {
   registrationResponse?: any;
 }
 
+type CredentialsMap = Record<string, StoredCredentials>;
+
 const CREDENTIALS_FILE = path.join(__dirname, '..', 'auth-credentials.json');
 
 export class CredentialStorage {
-  async saveCredentials(credentials: StoredCredentials): Promise<void> {
+  private async loadAllCredentials(): Promise<CredentialsMap> {
+    try {
+      const data = await fs.readFile(CREDENTIALS_FILE, 'utf-8');
+      return JSON.parse(data);
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        return {};
+      }
+      console.error('Failed to load credentials:', error);
+      throw error;
+    }
+  }
+
+  private async saveAllCredentials(credentials: CredentialsMap): Promise<void> {
     try {
       await fs.writeFile(
         CREDENTIALS_FILE,
         JSON.stringify(credentials, null, 2),
         'utf-8'
       );
+    } catch (error) {
+      console.error('Failed to save credentials:', error);
+      throw error;
+    }
+  }
+
+  async saveCredentials(serverId: string, credentials: StoredCredentials): Promise<void> {
+    try {
+      const allCredentials = await this.loadAllCredentials();
+      allCredentials[serverId] = credentials;
+      await this.saveAllCredentials(allCredentials);
       console.log('✓ Credentials saved successfully');
     } catch (error) {
       console.error('Failed to save credentials:', error);
@@ -32,33 +58,30 @@ export class CredentialStorage {
     }
   }
 
-  async loadCredentials(): Promise<StoredCredentials | null> {
+  async loadCredentials(serverId: string): Promise<StoredCredentials | null> {
     try {
-      const data = await fs.readFile(CREDENTIALS_FILE, 'utf-8');
-      return JSON.parse(data);
+      const allCredentials = await this.loadAllCredentials();
+      return allCredentials[serverId] || null;
     } catch (error: any) {
-      if (error.code === 'ENOENT') {
-        return null;
-      }
       console.error('Failed to load credentials:', error);
       throw error;
     }
   }
 
-  async clearCredentials(): Promise<void> {
+  async clearCredentials(serverId: string): Promise<void> {
     try {
-      await fs.unlink(CREDENTIALS_FILE);
+      const allCredentials = await this.loadAllCredentials();
+      delete allCredentials[serverId];
+      await this.saveAllCredentials(allCredentials);
       console.log('✓ Credentials cleared');
     } catch (error: any) {
-      if (error.code !== 'ENOENT') {
-        console.error('Failed to clear credentials:', error);
-        throw error;
-      }
+      console.error('Failed to clear credentials:', error);
+      throw error;
     }
   }
 
-  async hasValidCredentials(): Promise<boolean> {
-    const credentials = await this.loadCredentials();
+  async hasValidCredentials(serverId: string): Promise<boolean> {
+    const credentials = await this.loadCredentials(serverId);
     if (!credentials) return false;
 
     // Check if token is expired

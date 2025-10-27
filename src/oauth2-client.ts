@@ -18,9 +18,11 @@ export class OAuth2Client {
   private credentialStorage: CredentialStorage;
   private redirectUri = 'http://localhost:3000/callback';
   private callbackServer?: http.Server;
+  private serverId: string;
 
-  constructor() {
+  constructor(serverId: string) {
     this.credentialStorage = new CredentialStorage();
+    this.serverId = serverId;
   }
 
   /**
@@ -150,7 +152,7 @@ export class OAuth2Client {
       expiresAt,
     };
 
-    await this.credentialStorage.saveCredentials(credentials);
+    await this.credentialStorage.saveCredentials(this.serverId, credentials);
 
     return credentials;
   }
@@ -299,16 +301,16 @@ export class OAuth2Client {
       expiresAt,
     };
 
-    await this.credentialStorage.saveCredentials(credentials);
+    await this.credentialStorage.saveCredentials(this.serverId, credentials);
 
     return credentials;
   }
 
   async getStoredCredentials(): Promise<StoredCredentials | null> {
-    return this.credentialStorage.loadCredentials();
+    return this.credentialStorage.loadCredentials(this.serverId);
   }
 
   async clearCredentials(): Promise<void> {
-    return this.credentialStorage.clearCredentials();
+    return this.credentialStorage.clearCredentials(this.serverId);
   }
 }
