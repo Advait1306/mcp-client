@@ -17,6 +17,13 @@ A comprehensive, interactive CLI client for connecting to any Model Context Prot
   - Read resources with formatted output
   - Use prompts with argument support
 
+- **MCP Aggregator/Proxy Server**
+  - Run a single MCP server that aggregates multiple configured servers
+  - Exposes all tools, resources, and prompts from connected servers through one endpoint
+  - Automatic prefixing to prevent naming conflicts
+  - Supports all transport types (stdio, HTTP, SSE)
+  - Perfect for Claude Desktop or other MCP clients that need unified access
+
 - **OAuth2 Authentication**
   - Automatic OAuth2 flow for servers that require authentication
   - Dynamic client registration (RFC 7591)
@@ -37,11 +44,47 @@ npm run build
 
 ## Usage
 
-Start the interactive menu:
+### Interactive Client Mode
+
+Start the interactive menu to connect to and explore MCP servers:
 
 ```bash
 npm start
 ```
+
+### Aggregator/Proxy Server Mode
+
+Start the aggregator server to expose all configured servers through a single MCP endpoint:
+
+```bash
+npm run aggregator
+# Or specify a custom port
+npm run aggregator 3001
+```
+
+The aggregator server will:
+1. Load all servers from `mcp-servers.json`
+2. Connect to each server automatically
+3. Aggregate all tools, resources, and prompts
+4. Start an HTTP server at `http://localhost:3000/mcp` (or your specified port)
+
+You can then connect to this aggregator endpoint from Claude Desktop or any other MCP client:
+
+```json
+{
+  "mcpServers": {
+    "my-aggregated-servers": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+**Benefits:**
+- Access all your MCP servers through a single connection
+- No need to configure each server individually in your MCP client
+- Tools, resources, and prompts are automatically prefixed to avoid conflicts
+- Supports servers with OAuth2 authentication
 
 ## Adding Servers
 
@@ -231,7 +274,9 @@ For servers requiring OAuth2 authentication:
 
 ```
 src/
-├── index.ts                  # Main entry point
+├── index.ts                  # Main entry point (interactive mode)
+├── start-aggregator.ts       # Aggregator server entry point
+├── aggregator-server.ts      # MCP aggregator/proxy implementation
 ├── menu-system.ts            # Interactive menu interface
 ├── universal-mcp-client.ts   # Universal MCP client implementation
 ├── server-config.ts          # Server configuration management

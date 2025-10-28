@@ -1,8 +1,8 @@
-import express from 'express';
-import http from 'http';
-import { randomBytes, createHash } from 'crypto';
-import open from 'open';
-import { CredentialStorage, StoredCredentials } from './credential-storage.js';
+import express from "express";
+import http from "http";
+import { randomBytes, createHash } from "crypto";
+import open from "open";
+import { CredentialStorage, StoredCredentials } from "./credential-storage.js";
 
 interface OAuthMetadata {
   issuer: string;
@@ -16,7 +16,7 @@ interface OAuthMetadata {
 
 export class OAuth2Client {
   private credentialStorage: CredentialStorage;
-  private redirectUri = 'http://localhost:3000/callback';
+  private redirectUri = "http://localhost:3000/callback";
   private callbackServer?: http.Server;
   private serverId: string;
 
@@ -31,16 +31,21 @@ export class OAuth2Client {
   async discoverMetadata(mcpServerUrl: string): Promise<OAuthMetadata> {
     try {
       // Try to fetch OAuth metadata from well-known endpoint
-      const metadataUrl = new URL('/.well-known/oauth-authorization-server', mcpServerUrl);
+      const metadataUrl = new URL(
+        "/.well-known/oauth-authorization-server",
+        mcpServerUrl
+      );
       const response = await fetch(metadataUrl.toString());
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch OAuth metadata: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch OAuth metadata: ${response.statusText}`
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error discovering OAuth metadata:', error);
+      console.error("Error discovering OAuth metadata:", error);
       throw error;
     }
   }
@@ -51,34 +56,36 @@ export class OAuth2Client {
   async registerClient(registrationEndpoint: string): Promise<any> {
     try {
       const registrationRequest = {
-        client_name: 'Linear MCP Client',
+        client_name: "Linear MCP Client",
         redirect_uris: [this.redirectUri],
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
-        token_endpoint_auth_method: 'none', // Public client (no client secret)
-        application_type: 'native'
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none", // Public client (no client secret)
+        application_type: "native",
       };
 
       const response = await fetch(registrationEndpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(registrationRequest),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Client registration failed: ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Client registration failed: ${response.statusText} - ${errorText}`
+        );
       }
 
       const registration = await response.json();
-      console.log('✓ Client registered successfully');
-      console.log('  Client ID:', registration.client_id);
+      console.log("✓ Client registered successfully");
+      console.log("  Client ID:", registration.client_id);
 
       return registration;
     } catch (error) {
-      console.error('Error registering client:', error);
+      console.error("Error registering client:", error);
       throw error;
     }
   }
@@ -87,15 +94,13 @@ export class OAuth2Client {
    * Generate PKCE challenge
    */
   private generatePKCE() {
-    const verifier = randomBytes(32).toString('base64url');
-    const challenge = createHash('sha256')
-      .update(verifier)
-      .digest('base64url');
+    const verifier = randomBytes(32).toString("base64url");
+    const challenge = createHash("sha256").update(verifier).digest("base64url");
 
     return {
       codeVerifier: verifier,
       codeChallenge: challenge,
-      codeChallengeMethod: 'S256'
+      codeChallengeMethod: "S256",
     };
   }
 
@@ -109,22 +114,22 @@ export class OAuth2Client {
     clientSecret?: string
   ): Promise<StoredCredentials> {
     const pkce = this.generatePKCE();
-    const state = randomBytes(16).toString('hex');
+    const state = randomBytes(16).toString("hex");
 
     // Build authorization URL
     const authUrl = new URL(authorizationEndpoint);
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', this.redirectUri);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('state', state);
-    authUrl.searchParams.set('code_challenge', pkce.codeChallenge);
-    authUrl.searchParams.set('code_challenge_method', pkce.codeChallengeMethod);
-    authUrl.searchParams.set('scope', 'read write');
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", this.redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("state", state);
+    authUrl.searchParams.set("code_challenge", pkce.codeChallenge);
+    authUrl.searchParams.set("code_challenge_method", pkce.codeChallengeMethod);
+    authUrl.searchParams.set("scope", "read write");
 
-    console.log('\n🔐 Opening browser for authorization...');
-    console.log('If the browser does not open, visit this URL:');
+    console.log("\n🔐 Opening browser for authorization...");
+    console.log("If the browser does not open, visit this URL:");
     console.log(authUrl.toString());
-    console.log('');
+    console.log("");
 
     // Start callback server
     const authCode = await this.startCallbackServer(state, authUrl.toString());
@@ -160,35 +165,44 @@ export class OAuth2Client {
   /**
    * Start local server to handle OAuth callback
    */
-  private async startCallbackServer(expectedState: string, authUrl: string): Promise<string> {
+  private async startCallbackServer(
+    expectedState: string,
+    authUrl: string
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const app = express();
 
-      app.get('/callback', (req, res) => {
+      app.get("/callback", (req, res) => {
         const { code, state, error, error_description } = req.query;
 
         if (error) {
-          res.send(`<h1>Authorization failed</h1><p>${error}: ${error_description}</p>`);
+          res.send(
+            `<h1>Authorization failed</h1><p>${error}: ${error_description}</p>`
+          );
           this.callbackServer?.close();
-          reject(new Error(`Authorization failed: ${error} - ${error_description}`));
+          reject(
+            new Error(`Authorization failed: ${error} - ${error_description}`)
+          );
           return;
         }
 
         if (state !== expectedState) {
-          res.send('<h1>Invalid state parameter</h1>');
+          res.send("<h1>Invalid state parameter</h1>");
           this.callbackServer?.close();
-          reject(new Error('State parameter mismatch'));
+          reject(new Error("State parameter mismatch"));
           return;
         }
 
-        if (typeof code !== 'string') {
-          res.send('<h1>Missing authorization code</h1>');
+        if (typeof code !== "string") {
+          res.send("<h1>Missing authorization code</h1>");
           this.callbackServer?.close();
-          reject(new Error('Missing authorization code'));
+          reject(new Error("Missing authorization code"));
           return;
         }
 
-        res.send('<h1>Authorization successful!</h1><p>You can close this window and return to the terminal.</p>');
+        res.send(
+          "<h1>Authorization successful!</h1><p>You can close this window and return to the terminal.</p>"
+        );
 
         // Close server after a short delay
         setTimeout(() => {
@@ -199,12 +213,12 @@ export class OAuth2Client {
       });
 
       this.callbackServer = app.listen(3000, () => {
-        console.log('✓ Callback server started on http://localhost:3000');
+        console.log("✓ Callback server started on http://localhost:3000");
       });
 
       // Open browser
-      open(authUrl).catch(err => {
-        console.error('Failed to open browser:', err);
+      open(authUrl).catch((err) => {
+        console.error("Failed to open browser:", err);
       });
     });
   }
@@ -220,35 +234,37 @@ export class OAuth2Client {
     codeVerifier?: string
   ): Promise<any> {
     const body = new URLSearchParams({
-      grant_type: 'authorization_code',
+      grant_type: "authorization_code",
       code,
       redirect_uri: this.redirectUri,
       client_id: clientId,
     });
 
     if (codeVerifier) {
-      body.set('code_verifier', codeVerifier);
+      body.set("code_verifier", codeVerifier);
     }
 
     if (clientSecret) {
-      body.set('client_secret', clientSecret);
+      body.set("client_secret", clientSecret);
     }
 
     const response = await fetch(tokenEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: body.toString(),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Token exchange failed: ${response.statusText} - ${errorText}`
+      );
     }
 
     const tokenData = await response.json();
-    console.log('✓ Access token obtained');
+    console.log("✓ Access token obtained");
 
     return tokenData;
   }
@@ -263,30 +279,32 @@ export class OAuth2Client {
     clientSecret?: string
   ): Promise<StoredCredentials> {
     const body = new URLSearchParams({
-      grant_type: 'refresh_token',
+      grant_type: "refresh_token",
       refresh_token: refreshToken,
       client_id: clientId,
     });
 
     if (clientSecret) {
-      body.set('client_secret', clientSecret);
+      body.set("client_secret", clientSecret);
     }
 
     const response = await fetch(tokenEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: body.toString(),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Token refresh failed: ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Token refresh failed: ${response.statusText} - ${errorText}`
+      );
     }
 
     const tokenData = await response.json();
-    console.log('✓ Access token refreshed');
+    console.log("✓ Access token refreshed");
 
     const expiresAt = tokenData.expires_in
       ? Date.now() + tokenData.expires_in * 1000

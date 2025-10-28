@@ -37,17 +37,5 @@
     "id": "srv_1761585548227_klqtcxwzk",
     "createdAt": 1761585548227,
     "lastUsed": 1761585561157
-  },
-  {
-    "name": "Figma",
-    "description": "Design tool",
-    "transport": {
-      "type": "streamable-http",
-      "url": "https://mcp.figma.com/mcp",
-      "requiresAuth": true,
-      "authType": "oauth2"
-    },
-    "id": "srv_1761585940130_xc910eh9m",
-    "createdAt": 1761585940131
   }
 ]
